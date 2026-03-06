@@ -22,9 +22,9 @@ WEBEX_ACCESS_TOKEN="your_personal_access_token_here"
 You don't need to activate a virtual environment. Just run:
 
 ```Bash
-uv run python main.py
+uv run --env-file .env main.py
 ```
-`uv` will automatically create a hidden .venv, install wxc_sdk, rich, and python-dotenv, and execute your script.
+`uv` will automatically create a hidden `.venv`, install `wxc_sdk` and `rich`, and execute your script.
 
 ### 🛠 Features
 Automated Windowing: Automatically splits a 7-day range into 12-hour blocks to comply with Webex API limits.
@@ -61,3 +61,29 @@ Use the **SQLITE EXPLORER** in the sidebar to browse your `webex_recordings` and
 Rate Limits: The script is configured to use `retry_429=True`. If you see the progress bar "pause," it is likely waiting for the Webex rate-limit bucket to refill.
 
 Token Expiry: If you get a `401 Unauthorized error`, check that your `WEBEX_ACCESS_TOKEN` in `.env` hasn't expired.
+
+### 🧪 Testing & Dry Runs
+Before running a full 7-day sync, it is recommended to perform a "Dry Run" to verify your connection and database setup.
+
+1. Test the Connection
+You can limit the script to a single 12-hour window by modifying the days parameter in the main block of `webex.py`:
+
+```Python
+# Change this for testing:
+windows = get_12_hour_windows(days=0.5) 
+```
+2. Verify the Database
+After the test run, verify that the data landed correctly using the SQLite extension in VS Code:
+
+Open the **SQLITE EXPLORER** in the sidebar.
+
+Right-click `webex_recordings` and select **Show Table**.
+
+Ensure the `status` and `call_session_id` columns are populated (not null).
+
+## 🛡 Best Practices
+**Token Lifespan**: Webex Personal Access Tokens typically last only 12 hours. If you are running a long-term sync, consider using a **Webex Integration (OAuth)** or a **Service App** for a permanent Refresh Token.
+
+**Database Backups**: While SQLite is robust, it's good practice to copy the `recordings.db` file to a backup location before running a "Clear and Resync" operation.
+
+**Rate Limits**: If the terminal shows multiple 429 Too Many Requests warnings, the script will automatically pause. Do not stop the script; it will resume as soon as the Webex API allows.
