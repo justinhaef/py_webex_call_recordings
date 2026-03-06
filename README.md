@@ -11,6 +11,20 @@ If you don't have it yet, run the installer:
 
 * **Windows**: `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
 
+## 🔑 How to get your Token:
+**Check your Permissions:** Ensure your Webex account has the Full Admin or Compliance Officer role. Standard user accounts cannot pull recording metadata for an entire organization.
+
+**Visit the Developer Portal:** Go to developer.webex.com.
+
+**Log In:** Click Log In at the top right.
+
+**Copy your Token:** Under the "Accounts and Authentication" section (or the "Documentation" getting started page), you will see a temporary Personal Access Token.
+
+> * Note: These tokens are valid for 12 hours. For long-term automation, you should eventually create a "Service App" or "Integration" in the My Webex Apps section.
+
+## 📝 Set up the .env file:
+Create a file named .env in your project root and paste your token:
+
 2. Configure Environment Variables
 Create a file named `.env` in the root directory. This file is ignored by Git to keep your credentials safe.
 
