@@ -95,6 +95,40 @@ Right-click `webex_recordings` and select **Show Table**.
 
 Ensure the `status` and `call_session_id` columns are populated (not null).
 
+### ⌨️ CLI Usage
+This tool features a robust Command Line Interface (CLI) powered by `Typer` and `Rich`. By default, the script syncs data from the last 7 days, but you can override this for specific backfills.
+
+#### Basic Commands
+Sync the default range (Last 7 Days):
+```Bash
+uv run --env-file .env main.py
+```
+Sync a specific number of days:
+```Bash
+# Sync the last 48 hours
+uv run --env-file .env main.py --days 2
+```
+Sync a specific date range (Backfill):
+If you provide a `--start` date, the `--days` flag is ignored.
+```Bash
+# Sync from March 1st to March 5th
+uv run --env-file .env main.py --start 2026-03-01 --end 2026-03-05
+```
+*Note: If you provide `--start` but omit `--end`, the script will automatically sync from your start date up until now.*
+
+### Command Options
+| Flag | Shorthand | Description | Default |
+| :--- | :--- | :--- | :--- |
+| `--days` | `-d` | Number of days to look back from now. | `7.0` |
+| `--start` | | Explicit start date in `YYYY-MM-DD` format. | `None` |
+| `--end` | | Explicit end date in `YYYY-MM-DD` format. | `Now` |
+| `--help` | | Show the help menu and exit. | |
+
+### 🛠 Troubleshooting the CLI
+* Date Format: Ensure dates are entered as Year-Month-Day (e.g., 2026-03-07).
+* Validation: The script will prevent execution if the `--start` date is chronologically after the `--end` date.
+* Help Menu: Run `uv run main.py --help` at any time to see the beautiful, color-coded documentation built into the tool.
+
 ## 🛡 Best Practices
 **Token Lifespan**: Webex Personal Access Tokens typically last only 12 hours. If you are running a long-term sync, consider using a **Webex Integration (OAuth)** or a **Service App** for a permanent Refresh Token.
 
