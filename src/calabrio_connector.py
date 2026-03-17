@@ -29,7 +29,7 @@ class CalabrioConnector:
         response = requests.post(url, json=payload)
         response.raise_for_status()
         self.session_id = response.json().get("sessionId")
-        logger.info(f"[bold green]✅ Session Active:[/] {self.session_id[:10]}...")
+        logger.info(f"[bold green] Session Active:[/] {self.session_id[:10]}...")
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
     def _get_page(self, endpoint, params):
@@ -62,7 +62,7 @@ class CalabrioConnector:
             "limit": 100
         }
         
-        logger.info(f"📡 Querying Calabrio: [yellow]{params['beginDate']}[/] to [yellow]{params['endDate']}[/]")
+        logger.info(f"Querying Calabrio: [yellow]{params['beginDate']}[/] to [yellow]{params['endDate']}[/]")
         
         data = self._get_page("api/rest/recording/contact", params)
         if isinstance(data, list):

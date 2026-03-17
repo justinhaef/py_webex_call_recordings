@@ -27,7 +27,7 @@ HTML_TEMPLATE = """
     <div class="header-box">
         <h1>Reconciliation Report</h1>
         <div class="date-range">
-            📅 <strong>Sync Range:</strong> {{ start_range }} to {{ end_range }}
+             <strong>Sync Range:</strong> {{ start_range }} to {{ end_range }}
         </div>
     </div>
     

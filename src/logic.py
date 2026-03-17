@@ -90,7 +90,7 @@ def sync_calabrio_data(start_dt, end_dt, db_path, console, conn):
                 )
                 conn.commit()
                 total_saved += len(batch)
-                logger.info(f"📥 Batched {len(batch)} Calabrio records into DB.")
+                logger.info(f" Batched {len(batch)} Calabrio records into DB.")
                 batch = []
             
             progress.advance(task)
@@ -104,8 +104,8 @@ def sync_calabrio_data(start_dt, end_dt, db_path, console, conn):
             conn.commit()
             total_saved += len(batch)
 
-    logger.info(f"✨ Calabrio Sync Finished. Total records indexed: {total_saved}")
-    console.print(f"[bold green]✔ Calabrio Sync Complete:[/] {total_saved} records processed.")
+    logger.info(f" Calabrio Sync Finished. Total records indexed: {total_saved}")
+    console.print(f"[bold green] Calabrio Sync Complete:[/] {total_saved} records processed.")
 
 
 def setup_logging():

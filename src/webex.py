@@ -24,7 +24,7 @@ def sync_webex_data(start_dt: datetime, end_dt: datetime, console, conn):
     api = WebexSimpleApi(retry_429=True)
     windows = get_12_hour_windows(start_dt, end_dt)
 
-    logger.info(f"🚀 Starting Webex Sync: {len(windows)} windows to process.")
+    logger.info(f" Starting Webex Sync: {len(windows)} windows to process.")
 
     # We pass the 'console' from cli.py to ensure Progress bars use the same Rich instance
     with Progress(
@@ -85,16 +85,16 @@ def sync_webex_data(start_dt: datetime, end_dt: datetime, console, conn):
                 cursor.execute("INSERT OR REPLACE INTO sync_history VALUES (?,?,?,?,?)", 
                              (s_iso, e_iso, "SUCCESS", window_count, datetime.now().isoformat()))
                 conn.commit()
-                logger.debug(f"✅ Window Completed: {s_iso} - Found {window_count} records.")
+                logger.debug(f" Window Completed: {s_iso} - Found {window_count} records.")
                 
             except Exception as e:
-                logger.error(f"❌ Error in window {s_iso}: {e}")
+                logger.error(f" Error in window {s_iso}: {e}")
                 cursor.execute("INSERT OR REPLACE INTO sync_history VALUES (?,?,?,?,?)", 
                              (s_iso, e_iso, "FAILED", 0, datetime.now().isoformat()))
                 conn.commit()
 
             progress.advance(overall_task)
-            
+
     final_count = progress.tasks[1].completed
     logger.info(f"✨ Webex Sync Finished. Total records indexed: {final_count}")
     return progress.tasks[1].completed

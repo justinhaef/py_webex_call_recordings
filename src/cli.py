@@ -48,7 +48,7 @@ def sync(
 
     # 1.2. User Feedback
     console.print(Panel(
-        f"📅 [bold]Sync Range:[/]\n"
+        f" [bold]Sync Range:[/]\n"
         f"From: [green]{start_dt.strftime('%Y-%m-%d %H:%M')}[/]\n"
         f"To:   [green]{end_dt.strftime('%Y-%m-%d %H:%M')}[/]",
         expand=False,
