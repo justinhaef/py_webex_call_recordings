@@ -30,8 +30,12 @@ idna==3.11
     # via
     #   requests
     #   yarl
+jinja2==3.1.6
+    # via py-webex-call-recordings (pyproject.toml)
 markdown-it-py==3.0.0
     # via rich
+markupsafe==3.0.3
+    # via jinja2
 mdurl==0.1.2
     # via markdown-it-py
 multidict==6.7.1
@@ -68,6 +72,8 @@ shellingham==1.5.4
     # via typer
 six==1.17.0
     # via python-dateutil
+tenacity==9.1.2
+    # via py-webex-call-recordings (pyproject.toml)
 typer==0.23.2
     # via py-webex-call-recordings (pyproject.toml)
 typing-extensions==4.15.0
