@@ -3,10 +3,12 @@ import os
 import logging
 from datetime import datetime
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, MofNCompleteColumn, TimeElapsedColumn
 from rich.logging import RichHandler
 
 from .calabrio_connector import CalabrioConnector
+
+logger = logging.getLogger("reconciliation")
 
 console = Console()
 
@@ -52,30 +54,58 @@ def init_db():
         conn.commit()
 
 def sync_calabrio_data(start_dt, end_dt, db_path, console, conn):
-    """Orchestrates the Calabrio pull and save."""
+    """Orchestrates the Calabrio pull and save with batching."""
     connector = CalabrioConnector()
+    cursor = conn.cursor()
     
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
-        transient=True,
+        MofNCompleteColumn(),
+        TimeElapsedColumn(),
+        transient=False,
+        console=console
     ) as progress:
-        task = progress.add_task("[cyan]Connecting to Calabrio Archive...", total=None)
         
-        # Pull records from API
+        task = progress.add_task("[cyan]Fetching Calabrio Archive...", total=None)
+        
+        # 1. Fetch records from API
+        # Note: get_recordings returns the already-mapped list of tuples
         recordings = connector.get_recordings(start_dt, end_dt)
-        
-        # Insert into SQLite
-        with sqlite3.connect(db_path) as conn:
-            progress.update(task, description=f"[green]Writing {len(recordings)} records to cache...")
-            conn.executemany(
+        progress.update(task, total=len(recordings))
+
+        batch = []
+        batch_size = 500
+        total_saved = 0
+
+        # 2. Batch Insert Logic
+        for rec in recordings:
+            batch.append(rec)
+            
+            if len(batch) >= batch_size:
+                cursor.executemany(
+                    "INSERT OR IGNORE INTO calabrio_recordings VALUES (?, ?, ?, ?, ?)",
+                    batch
+                )
+                conn.commit()
+                total_saved += len(batch)
+                logger.info(f"📥 Batched {len(batch)} Calabrio records into DB.")
+                batch = []
+            
+            progress.advance(task)
+
+        # 3. Final remainder commit
+        if batch:
+            cursor.executemany(
                 "INSERT OR IGNORE INTO calabrio_recordings VALUES (?, ?, ?, ?, ?)",
-                recordings
+                batch
             )
             conn.commit()
-            
-    console.print(f"[bold green]✔ Calabrio Sync Complete:[/] {len(recordings)} records processed.")
+            total_saved += len(batch)
+
+    logger.info(f"✨ Calabrio Sync Finished. Total records indexed: {total_saved}")
+    console.print(f"[bold green]✔ Calabrio Sync Complete:[/] {total_saved} records processed.")
 
 
 def setup_logging():
@@ -92,11 +122,11 @@ def setup_logging():
 
     # 3. Setup the Rich Handler (Colorful and pretty for the terminal)
     rich_handler = RichHandler(rich_tracebacks=True, markup=True)
-    rich_handler.setLevel(logging.INFO)
+    rich_handler.setLevel(logging.WARNING)
 
     # 4. Apply both to the root logger
     logging.basicConfig(
-        level="INFO",
+        level=logging.DEBUG,
         format="%(message)s",
         datefmt="[%X]",
         handlers=[rich_handler, file_handler]
