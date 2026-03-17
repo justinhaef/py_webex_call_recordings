@@ -126,7 +126,7 @@ def setup_logging():
 
     # 4. Apply both to the root logger
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging.INFO,
         format="%(message)s",
         datefmt="[%X]",
         handlers=[rich_handler, file_handler]
