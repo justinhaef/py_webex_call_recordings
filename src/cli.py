@@ -65,7 +65,7 @@ def sync(
         sync_webex_data(start_dt, end_dt, console, conn)
 
         # 4. Step 2: Calabrio Sync (The Archive)
-        console.print("\n[bold yellow]Step 2: Fetching Calabrio Archive Status...[/]")
+        console.print("\n[bold yellow]Step 2: Fetching Calabrio Recordings...[/]")
         # Passing 'recordings_cache.db' as the path used in init_db
         sync_calabrio_data(start_dt, end_dt, db_path, console, conn)
 

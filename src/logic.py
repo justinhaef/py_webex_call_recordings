@@ -68,7 +68,7 @@ def sync_calabrio_data(start_dt, end_dt, db_path, console, conn):
         console=console
     ) as progress:
         
-        task = progress.add_task("[cyan]Fetching Calabrio Archive...", total=None)
+        task = progress.add_task("[cyan]Fetching Calabrio Recordings...", total=None)
         
         # 1. Fetch records from API
         # Note: get_recordings returns the already-mapped list of tuples
