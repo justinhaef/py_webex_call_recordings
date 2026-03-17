@@ -15,3 +15,6 @@ wheels/
 
 # Log file
 *.log
+
+#Reports folder
+reports/

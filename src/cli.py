@@ -72,8 +72,8 @@ def sync(
         # 5. Step 3: Reporting
         if report:
             console.print("\n[bold yellow]Step 3: Generating Reconciliation Report...[/]")
-            generate_html_report()
-            console.print("[bold green]✔ Success! Report generated: sync_report.html[/]")
+            report_path = generate_html_report(start_dt, end_dt)
+            console.print(f"[bold green]✔ Success! Report generated:[/] [cyan]{report_path}[/]")
 
         console.print("\n[bold green]✨ All tasks complete.[/]\n")
     finally:
