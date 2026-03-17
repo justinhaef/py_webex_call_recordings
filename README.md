@@ -2,7 +2,7 @@
 This Python application automates the synchronization of Webex Calling recordings into a local SQLite database for reconciliation and reporting. It is designed to handle high volumes (30,000+ recordings per day) by breaking requests into 12-hour windows and utilizing batch database writes.
 
 ## 🚀 Quick Start with uv
-This project uses `uv`, an extremely fast Python package manager. You don't need to manually create virtual environments or use pip install; uv handles it all automatically.
+This project uses `uv`, an extremely fast Python package manager. You don't need to manually create virtual environments or use pip install; uv handles it all automatically.  **`UV` is not required.  All dependancies are listed in `requirements.txt`.**
 
 1. Install `uv`
 If you don't have it yet, run the installer:
@@ -22,6 +22,11 @@ If you don't have it yet, run the installer:
 
 > * Note: These tokens are valid for 12 hours. For long-term automation, you should eventually create a "Service App" or "Integration" in the My Webex Apps section.
 
+### Calabrio Tenant Setup
+For the API to function, ensure the following is configured in your Calabrio instance:
+1. **Enable Legacy API Access:** Navigate to `System Configuration` and ensure "Enable Local Web Service" is checked.
+2. **Permissions:** The API user must have the "API Access" function enabled within their assigned Role.
+
 ## 📝 Set up the .env file:
 Create a file named .env in your project root and paste your token:
 
@@ -30,7 +35,19 @@ Create a file named `.env` in the root directory. This file is ignored by Git to
 
 ```Bash
 # .env
-WEBEX_ACCESS_TOKEN="your_personal_access_token_here"
+### Environment Variables
+Create a `.env` file in the root directory with the following:
+
+# Webex Credentials
+WEBEX_ACCESS_TOKEN=your_token_here
+
+# Calabrio Credentials
+CALABRIO_API_URL=https://your-tenant.calabrio.com
+CALABRIO_USER_ID=your_username
+CALABRIO_PASSWORD=your_password
+
+# Database Configuration
+DB_PATH=recordings_cache.db
 ```
 3. Run the Application
 You don't need to activate a virtual environment. Just run:
@@ -49,16 +66,30 @@ Performance Optimized: Uses SQLite **WAL Mode** and batch executemany inserts to
 
 Rich UI: Real-time progress bars and structured logging directly in your terminal.
 
+## Usage
+
+The tool performs a three-step pipeline:
+1. **Webex Sync:** Chunks the requested date range into 12-hour windows to fetch all metadata from Webex.
+2. **Calabrio Sync:** Authenticates via a session cookie and pulls matching archive metadata.
+3. **Reconciliation:** Compares the two datasets in SQLite and generates an HTML report.
+
+### 4. Reporting & Output
+Explain where the new files are stored.
+
+## Reports & Logs
+
+- **HTML Reports:** Saved in the `/reports` folder. Filenames are timestamped (e.g., `sync_report_2026-03-17_1132.html`) and include the sync range in the header.
+- **Logging:** Detailed execution logs (including batch commits and API retries) are saved to `reconciliation.log`. Terminal output is restricted to progress bars and high-level summaries to maintain a clean interface.
+
 ### 📂 Project Structure
-`main.py`: The main execution script.
-
-`webex.py`: Where all the work gets done!
-
-`recordings.db`: The SQLite database containing your synced data.
-
-`sync.log`: A detailed log of all API calls and errors.
-
-`.env`: Your private secrets (do not commit!).
+- `main.py`: The main execution script.
+- `src/webex.py`: Handles Webex SDK integration and 12-hour windowing.
+- `src/calabrio_connector.py`: Handles Calabrio session authentication and paginated API requests.
+- `src/logic.py`: Manages the SQLite schema, database initialization, and batch processing.
+- `src/reporter.py`: Contains the Jinja2 HTML template and reconciliation SQL logic.
+- `src/cli.py`: The Typer-based entry point for the application.
+- `reports/` : Where your reports HTML will be saved.
+- `.env`: Your private secrets (do not commit!).
 
 ### 🔍 Viewing the Data
 If you use VS Code, we recommend the SQLite extension (by alexcvzz).
@@ -67,7 +98,7 @@ Open the Command Palette (`Ctrl+Shift+P`).
 
 Type `SQLite: Open Database`.
 
-Select `recordings.db`.
+Select `recordings_cache.db`.
 
 Use the **SQLITE EXPLORER** in the sidebar to browse your `webex_recordings` and `sync_history` tables.
 
