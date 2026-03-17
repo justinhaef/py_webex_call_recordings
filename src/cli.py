@@ -1,38 +1,33 @@
+import os
+import sqlite3
 import typer
-from typing import Optional
 from datetime import datetime, timedelta
 from rich.console import Console
 from rich.panel import Panel
 
-# Import the engine from your logic file
-from .webex import run_sync_logic
+# Importing from your specific file structure
+from .logic import init_db, sync_calabrio_data
+from .webex import sync_webex_data  # Your webex logic is in webex.py
+from .reporter import generate_html_report
 
-app = typer.Typer(rich_markup_mode="rich")
+app = typer.Typer(help="Webex to Calabrio Recording Reconciliation Tool")
 console = Console()
 
 @app.command()
 def sync(
-    days: float = typer.Option(
-        7.0, "--days", "-d", 
-        help="Number of days to sync backwards from now."
-    ),
-    start: Optional[str] = typer.Option(
-        None, "--start", 
-        help="Explicit start date (YYYY-MM-DD). Overrides --days."
-    ),
-    end: Optional[str] = typer.Option(
-        None, "--end", 
-        help="Explicit end date (YYYY-MM-DD)."
-    )
+    days: float = typer.Option(7.0, "--days", "-d", help="Number of days to sync"),
+    start: str = typer.Option(None, "--start", help="Start date (YYYY-MM-DD)"),
+    end: str = typer.Option(None, "--end", help="End date (YYYY-MM-DD)"),
+    report: bool = typer.Option(True, "--report/--no-report", help="Generate HTML report after sync")
 ):
     """
-    [bold cyan]Webex Recording Sync Tool[/bold cyan] 🚀
-    
-    Syncs recording metadata into SQLite using 12-hour windows.
-    Default is the last 7 days.
+    Performs a full reconciliation: 
+    1. Pulls from Webex 
+    2. Pulls from Calabrio 
+    3. Generates HTML report
     """
-    
-    # 1. Determine the Date Range
+ 
+    # 1. Handle Time Range Logic
     try:
         if start:
             start_dt = datetime.strptime(start, "%Y-%m-%d")
@@ -42,7 +37,7 @@ def sync(
             end_dt = datetime.now()
             start_dt = end_dt - timedelta(days=days)
             
-        # 2. Validation Check
+        # 1.1. Validation Check
         if start_dt > end_dt:
             console.print("[bold red]Error:[/] Start date cannot be after the end date! 🛑")
             raise typer.Exit(code=1)
@@ -51,7 +46,7 @@ def sync(
         console.print("[bold red]Error:[/] Invalid date format. Please use [yellow]YYYY-MM-DD[/].")
         raise typer.Exit(code=1)
 
-    # 3. User Feedback
+    # 1.2. User Feedback
     console.print(Panel(
         f"📅 [bold]Sync Range:[/]\n"
         f"From: [green]{start_dt.strftime('%Y-%m-%d %H:%M')}[/]\n"
@@ -60,10 +55,29 @@ def sync(
         border_style="cyan"
     ))
 
-    # 4. Trigger the Engine
-    total_synced = run_sync_logic(start_dt, end_dt, console)
-    
-    console.print(f"\n[bold green]✔ Done![/] Processed [yellow]{total_synced}[/] recordings.")
+    # 2. Ensure DB is ready
+    init_db()
+    db_path = os.getenv("DB_PATH", "recordings_cache.db")
+    conn = sqlite3.connect(db_path)
+    try:
+        # 3. Step 1: Webex Sync (Source of Truth)
+        console.print("[bold yellow]Step 1: Fetching Webex Recordings...[/]")
+        sync_webex_data(start_dt, end_dt, console, conn)
+
+        # 4. Step 2: Calabrio Sync (The Archive)
+        console.print("\n[bold yellow]Step 2: Fetching Calabrio Archive Status...[/]")
+        # Passing 'recordings_cache.db' as the path used in init_db
+        sync_calabrio_data(start_dt, end_dt, db_path, console, conn)
+
+        # 5. Step 3: Reporting
+        if report:
+            console.print("\n[bold yellow]Step 3: Generating Reconciliation Report...[/]")
+            generate_html_report()
+            console.print("[bold green]✔ Success! Report generated: sync_report.html[/]")
+
+        console.print("\n[bold green]✨ All tasks complete.[/]\n")
+    finally:
+        conn.close()
 
 if __name__ == "__main__":
     app()
