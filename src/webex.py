@@ -55,7 +55,10 @@ def sync_webex_data(start_dt: datetime, end_dt: datetime, console, conn):
                 window_count = 0
                 
                 for rec in recordings_gen:
-                    session_id = rec.service_data.call_session_id if rec.service_data else None
+                    # session_id = rec.service_data.call_session_id if rec.service_data else None
+                    # Changing to rec.id to match what Calabrio is keying.  
+                    session_id = rec.id if rec.id else None
+                    
                     if session_id:
                         # Safety extraction for status
                         status_str = str(rec.status.value) if hasattr(rec.status, 'value') else str(rec.status)
