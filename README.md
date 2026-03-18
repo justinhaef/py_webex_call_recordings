@@ -142,7 +142,7 @@ If you provide a `--start` date, the `--days` flag is ignored.
 # Sync from March 1st to March 5th
 uv run --env-file .env main.py --start 2026-03-01 --end 2026-03-05
 ```
-# Sync from March 1st Noon to March 1st 12:05
+Sync from March 1st Noon to March 1st 12:05
 ```Bash
 uv run --env-file .env main.py --start "2026-03-01 12:00" --end "2026-03-01 12:05"
 ```
