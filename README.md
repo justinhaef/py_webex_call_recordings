@@ -73,9 +73,6 @@ The tool performs a three-step pipeline:
 2. **Calabrio Sync:** Authenticates via a session cookie and pulls matching archive metadata.
 3. **Reconciliation:** Compares the two datasets in SQLite and generates an HTML report.
 
-### 4. Reporting & Output
-Explain where the new files are stored.
-
 ## Reports & Logs
 
 - **HTML Reports:** Saved in the `/reports` folder. Filenames are timestamped (e.g., `sync_report_2026-03-17_1132.html`) and include the sync range in the header.
