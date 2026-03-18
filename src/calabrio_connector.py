@@ -25,7 +25,7 @@ class CalabrioConnector:
             "language": "en"
         }
         
-        logger.info("[bold cyan]🔐 Authenticating with Calabrio...[/]")
+        logger.info("[bold cyan] Authenticating with Calabrio...[/]")
         response = requests.post(url, json=payload)
         response.raise_for_status()
         self.session_id = response.json().get("sessionId")

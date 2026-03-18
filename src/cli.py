@@ -30,25 +30,37 @@ def sync(
     # 1. Handle Time Range Logic
     try:
         if start:
-            start_dt = datetime.strptime(start, "%Y-%m-%d")
-            # If start is provided but no end, go up to 'now'
-            end_dt = datetime.strptime(end, "%Y-%m-%d") if end else datetime.now()
+            # 1. Try parsing full timestamp first (e.g., 2026-03-17 14:00)
+            try:
+                start_dt = datetime.strptime(start, "%Y-%m-%d %H:%M")
+                if end:
+                    end_dt = datetime.strptime(end, "%Y-%m-%d %H:%M")
+                else:
+                    # If start time provided but no end, test a 30-min window
+                    end_dt = start_dt + timedelta(minutes=30)
+            
+            except ValueError:
+                # 2. Fall back to standard Date if time isn't provided
+                start_dt = datetime.strptime(start, "%Y-%m-%d")
+                end_dt = datetime.strptime(end, "%Y-%m-%d") if end else datetime.now()
         else:
+            # 3. No start provided? Use the --days offset
             end_dt = datetime.now()
             start_dt = end_dt - timedelta(days=days)
-            
-        # 1.1. Validation Check
-        if start_dt > end_dt:
-            console.print("[bold red]Error:[/] Start date cannot be after the end date! 🛑")
-            raise typer.Exit(code=1)
 
-    except ValueError:
-        console.print("[bold red]Error:[/] Invalid date format. Please use [yellow]YYYY-MM-DD[/].")
+    except ValueError as e:
+        console.print(f"[bold red]DATE ERROR:[/] Could not parse '{start}' or '{end}'.")
+        console.print("[dim]Use YYYY-MM-DD or 'YYYY-MM-DD HH:MM'[/]")
+        raise typer.Exit(1)
+            
+    # 1.1. Validation Check
+    if start_dt > end_dt:
+        console.print("[bold red]Error:[/] Start date cannot be after the end date! 🛑")
         raise typer.Exit(code=1)
 
     # 1.2. User Feedback
     console.print(Panel(
-        f" [bold]Sync Range:[/]\n"
+        f"[bold]Sync Range:[/]\n"
         f"From: [green]{start_dt.strftime('%Y-%m-%d %H:%M')}[/]\n"
         f"To:   [green]{end_dt.strftime('%Y-%m-%d %H:%M')}[/]",
         expand=False,
@@ -73,9 +85,9 @@ def sync(
         if report:
             console.print("\n[bold yellow]Step 3: Generating Reconciliation Report...[/]")
             report_path = generate_html_report(start_dt, end_dt)
-            console.print(f"[bold green]✔ Success! Report generated:[/] [cyan]{report_path}[/]")
+            console.print(f"[bold green]Success! Report generated:[/] [cyan]{report_path}[/]")
 
-        console.print("\n[bold green]✨ All tasks complete.[/]\n")
+        console.print("\n[bold green]All tasks complete.[/]\n")
     finally:
         conn.close()
 
