@@ -1,7 +1,7 @@
 import os
 import requests
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from rich.console import Console
 from tenacity import retry, stop_after_attempt, wait_exponential
 
@@ -53,6 +53,9 @@ class CalabrioConnector:
 
     def get_recordings(self, start_dt, end_dt):
         """Fetches recordings from the Contact API with 100-record limit"""
+        # force UTC timezone as Webex is set for that as well.
+        start_dt = start_dt.astimezone(timezone.utc)
+        end_dt = end_dt.astimezone(timezone.utc)
         all_recs = []
         params = {
             "beginDate": start_dt.strftime('%Y-%m-%d'),
