@@ -1,35 +1,10 @@
-import sqlite3
 import logging
 from datetime import datetime, timedelta
 from wxc_sdk import WebexSimpleApi
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, MofNCompleteColumn, TimeElapsedColumn
 
-logger = logging.getLogger("webex_sync")
+logger = logging.getLogger("reconciliation")
 
-def init_db(db_path="recordings.db"):
-    conn = sqlite3.connect(db_path)
-    conn.execute("PRAGMA journal_mode = WAL")
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS webex_recordings (
-            call_session_id TEXT PRIMARY KEY,
-            start_time TEXT,
-            owner_email TEXT,
-            duration_seconds INTEGER,
-            status TEXT,
-            raw_json TEXT
-        )
-    """)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS sync_history (
-            window_start TEXT PRIMARY KEY,
-            window_end TEXT,
-            status TEXT,
-            record_count INTEGER,
-            last_run TEXT
-        )
-    """)
-    conn.commit()
-    return conn
 
 def get_12_hour_windows(start_dt: datetime, end_dt: datetime):
     """Chunks any date range into 12-hour segments for Webex compliance."""
@@ -43,11 +18,13 @@ def get_12_hour_windows(start_dt: datetime, end_dt: datetime):
         current_start = current_end
     return windows
 
-def run_sync_logic(start_dt: datetime, end_dt: datetime, console):
+def sync_webex_data(start_dt: datetime, end_dt: datetime, console, conn):
     """The core engine that performs the sync."""
+    cursor = conn.cursor()
     api = WebexSimpleApi(retry_429=True)
-    conn = init_db()
     windows = get_12_hour_windows(start_dt, end_dt)
+
+    logger.info(f"Starting Webex Sync: {len(windows)} windows to process.")
 
     # We pass the 'console' from cli.py to ensure Progress bars use the same Rich instance
     with Progress(
@@ -79,6 +56,7 @@ def run_sync_logic(start_dt: datetime, end_dt: datetime, console):
                 
                 for rec in recordings_gen:
                     session_id = rec.service_data.call_session_id if rec.service_data else None
+                    
                     if session_id:
                         # Safety extraction for status
                         status_str = str(rec.status.value) if hasattr(rec.status, 'value') else str(rec.status)
@@ -96,25 +74,28 @@ def run_sync_logic(start_dt: datetime, end_dt: datetime, console):
                     progress.advance(record_task)
 
                     if len(batch) >= 500:
-                        conn.executemany("INSERT OR IGNORE INTO webex_recordings VALUES (?,?,?,?,?,?)", batch)
+                        cursor.executemany("INSERT OR IGNORE INTO webex_recordings VALUES (?,?,?,?,?,?)", batch)
                         conn.commit()
+                        logger.info(f"Batched 500 records into DB (Window: {s_iso})")
                         batch = []
 
                 if batch:
-                    conn.executemany("INSERT OR IGNORE INTO webex_recordings VALUES (?,?,?,?,?,?)", batch)
+                    cursor.executemany("INSERT OR IGNORE INTO webex_recordings VALUES (?,?,?,?,?,?)", batch)
                 
                 # Mark history as success
-                conn.execute("INSERT OR REPLACE INTO sync_history VALUES (?,?,?,?,?)", 
+                cursor.execute("INSERT OR REPLACE INTO sync_history VALUES (?,?,?,?,?)", 
                              (s_iso, e_iso, "SUCCESS", window_count, datetime.now().isoformat()))
                 conn.commit()
+                logger.debug(f"Window Completed: {s_iso} - Found {window_count} records.")
                 
             except Exception as e:
-                logger.error(f"❌ Error in window {s_iso}: {e}")
-                conn.execute("INSERT OR REPLACE INTO sync_history VALUES (?,?,?,?,?)", 
+                logger.error(f"Error in window {s_iso}: {e}")
+                cursor.execute("INSERT OR REPLACE INTO sync_history VALUES (?,?,?,?,?)", 
                              (s_iso, e_iso, "FAILED", 0, datetime.now().isoformat()))
                 conn.commit()
 
             progress.advance(overall_task)
 
-    conn.close()
+    final_count = progress.tasks[1].completed
+    logger.info(f"Webex Sync Finished. Total records indexed: {final_count}")
     return progress.tasks[1].completed

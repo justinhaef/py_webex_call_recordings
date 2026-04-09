@@ -5,7 +5,9 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.9.13"
 dependencies = [
+    "jinja2>=3.1.6",
     "rich>=14.3.3",
+    "tenacity>=9.1.2",
     "typer[all]>=0.23.2",
     "wxc-sdk>=1.29.1",
 ]
